@@ -1,31 +1,35 @@
 package com.ljt.study.webflux.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 /**
  * @author LiJingTang
  * @date 2021-05-07 16:37
  */
+@Slf4j
 @RestController
 @RequestMapping("/mono")
 public class MonoController {
 
     @GetMapping("/1")
     public String get() {
-        System.out.println("----1");
+        log.info("开始");
         String result = getResult();
-        System.out.println("----2");
+        log.info("结束");
         return result;
     }
 
     @GetMapping("/2")
     public Mono<String> get2() {
-        System.out.println("----1");
-        Mono<String> result = Mono.create(sink -> getResult());
-        System.out.println("----2");
+        log.info("开始");
+        Mono<String> result = Mono.create(sink -> sink.success(getResult()));
+        log.info("结束");
         return result;
     }
 
@@ -33,10 +37,10 @@ public class MonoController {
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
 
-        return "webflux:mono";
+        return "Mono: " + LocalDateTime.now().toString();
     }
 
 }
