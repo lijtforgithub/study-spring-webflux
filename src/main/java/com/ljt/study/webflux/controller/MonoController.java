@@ -28,7 +28,7 @@ public class MonoController {
     @GetMapping("/2")
     public Mono<String> get2() {
         log.info("开始");
-        Mono<String> result = Mono.create(sink -> sink.success(getResult()));
+        Mono<String> result = Mono.just(getResult());
         log.info("结束");
         return result;
     }
