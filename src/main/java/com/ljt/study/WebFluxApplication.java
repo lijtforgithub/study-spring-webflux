@@ -1,4 +1,4 @@
-package com.ljt.study.webflux;
+package com.ljt.study;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
