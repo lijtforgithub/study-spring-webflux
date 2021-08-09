@@ -170,10 +170,11 @@ class FlowableTest {
                 emitter.onNext(i);
             }
         }, BackpressureStrategy.BUFFER)
+//                .onBackpressureBuffer(50)
+//                .rebatchRequests(16)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.computation())
                 .subscribe(new Subscriber<Integer>() {
-
                     private Subscription mSubscription;
 
                     @Override
@@ -201,6 +202,7 @@ class FlowableTest {
                         log.info("onComplete");
                     }
                 });
+
         TimeUnit.SECONDS.sleep(100);
     }
 
