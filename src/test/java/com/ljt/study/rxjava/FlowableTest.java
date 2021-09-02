@@ -1,9 +1,6 @@
 package com.ljt.study.rxjava;
 
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Flowable;
-import io.reactivex.FlowableEmitter;
-import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.*;
 import io.reactivex.schedulers.Schedulers;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +9,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -88,7 +86,7 @@ class FlowableTest {
     /**
      * MISSING 通过Create方法创建的Flowable没有指定背压策略，不会对通过OnNext发射的数据做缓存或丢弃处理，
      * 需要下游通过背压操作符（onBackpressureBuffer()/onBackpressureDrop()/onBackpressureLatest()）指定背压策略
-     *
+     * <p>
      * BUFFER 默认策略，Flowable的异步缓存池同Observable的一样，没有固定大小，可以无限制向里添加数据，不会抛出MissingBackpressureException异常，但会导致OOM。
      */
     @Test
@@ -97,6 +95,14 @@ class FlowableTest {
 //                .onBackpressureBuffer(100)
                 .observeOn(Schedulers.io())
                 .subscribe(subscriber(null));
+    }
+
+    @Test
+    void onBackpressureBuffer() {
+        Flowable.range(1, 200)
+                .onBackpressureBuffer(100)
+                .observeOn(Schedulers.computation())
+                .subscribe(SUBSCRIBER);
     }
 
     private static final Flowable FLOWABLE = Flowable.create((FlowableOnSubscribe<Integer>) emitter -> {
@@ -149,32 +155,33 @@ class FlowableTest {
     @Test
     void backpressure() {
         Flowable.create((FlowableOnSubscribe<Integer>) emitter -> {
-            log.info("First requested = {}", emitter.requested());
+                    log.info("First requested = {}", emitter.requested());
 
-            for (int i = 1; i <= 5000; i++) {
-                boolean flag = false;
-                /*
-                 * 因为缓存池中数据的清理，并不是Subscriber接收一条，便清理一条，而是每累积到95条清理一次。也就是Subscriber接收到第96条数据时，缓存池才开始清理数据，之后Flowable发射的数据才得以放入。
-                 * 当下游消费掉第96个（0.75）事件之后，上游又开始发事件了，而且可以看到当前上游的requested的值是96
-                 */
-                while (!emitter.isCancelled() && emitter.requested() == 0) {
-                    if (!flag) {
-                        log.info("缓冲池满了 暂停发送");
-                        flag = true;
+                    for (int i = 1; i <= 20000; i++) {
+                        boolean flag = false;
+                        /*
+                         * 因为缓存池中数据的清理，并不是Subscriber接收一条，便清理一条，而是每累积到95条清理一次。也就是Subscriber接收到第96条数据时，缓存池才开始清理数据，之后Flowable发射的数据才得以放入。
+                         * 当下游消费掉第96个（0.75）事件之后，上游又开始发事件了，而且可以看到当前上游的requested的值是96
+                         */
+                        while (!emitter.isCancelled() && emitter.requested() == 0) {
+                            if (!flag) {
+                                log.info("缓冲池满了 暂停发送");
+                                flag = true;
+                            }
+
+                            // 线程睡眠等待下游接收
+                            TimeUnit.MILLISECONDS.sleep(500);
+                        }
+                        log.info("emitter {} , requested = {}", i, emitter.requested());
+                        emitter.onNext(i);
                     }
-
-                    // 线程睡眠等待下游接收
-                    TimeUnit.MILLISECONDS.sleep(500);
-                }
-                log.info("emitter {} , requested = {}", i, emitter.requested());
-                emitter.onNext(i);
-            }
-        }, BackpressureStrategy.BUFFER)
-//                .onBackpressureBuffer(50)
+                }, BackpressureStrategy.BUFFER)
 //                .rebatchRequests(16)
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.computation())
+//                .subscribeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
+//                .onBackpressureBuffer(130)
                 .subscribe(new Subscriber<Integer>() {
+
                     private Subscription mSubscription;
 
                     @Override
@@ -204,6 +211,16 @@ class FlowableTest {
                 });
 
         TimeUnit.SECONDS.sleep(100);
+    }
+
+    @Test
+    void generate() {
+        Random random = new Random();
+        Flowable.generate((Emitter<Integer> emitter) -> {
+                    emitter.onNext(random.nextInt(10));
+                })
+                .subscribeOn(Schedulers.io())
+                .subscribe(subscriber(5L));
     }
 
 }
