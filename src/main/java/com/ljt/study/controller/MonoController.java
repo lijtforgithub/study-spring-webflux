@@ -40,7 +40,7 @@ public class MonoController {
             log.error(e.getMessage());
         }
 
-        return "Mono: " + LocalDateTime.now().toString();
+        return "Mono: " + LocalDateTime.now();
     }
 
 }
