@@ -1,5 +1,6 @@
 package com.ljt.study.controller;
 
+import com.ljt.study.filter.ThreadLocalHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,9 +28,9 @@ public class MonoController {
 
     @GetMapping("/2")
     public Mono<String> get2() {
-        log.info("开始");
+        log.info("开始 {}", ThreadLocalHolder.get());
         Mono<String> result = Mono.just(getResult());
-        log.info("结束");
+        log.info("结束 {}", ThreadLocalHolder.get());
         return result;
     }
 

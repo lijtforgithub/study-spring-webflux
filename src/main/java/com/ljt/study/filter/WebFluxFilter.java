@@ -28,14 +28,16 @@ public class WebFluxFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
-        log.info("拦截器 {}", request.getQueryParams());
+        log.info("拦截器 {} {}", request.getPath(), ThreadLocalHolder.get());
+
+        ThreadLocalHolder.set("上下文");
 
         HttpStatus statusCode = response.getStatusCode();
         if (statusCode != HttpStatus.OK) {
-            return chain.filter(exchange);
+            return chain.filter(exchange).doOnTerminate(ThreadLocalHolder::remove);
         }
 
-        return chain.filter(exchange.mutate().response(new CacheResponseBody(exchange)).build());
+        return chain.filter(exchange.mutate().response(new CacheResponseBody(exchange)).build()).doOnTerminate(ThreadLocalHolder::remove);
     }
 
 
